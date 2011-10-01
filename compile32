@@ -1,0 +1,8 @@
+#!/bin/bash
+
+rm -f *.so test
+
+gcc -g3 -m32       -shared -o libtest1.so libtest1.c  #intensionally compiled as non-PIC
+gcc -g3 -m32 -fPIC -shared -o libtest2.so libtest2.c
+
+gcc -g3 -m32 -L$PWD -o test test.c elf_hook.c -ltest1 -ltest2 -ldl

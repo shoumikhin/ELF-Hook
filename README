@@ -1,0 +1,2 @@
+Method of patching the import table in ELF shared libraries.
+Read more info at CodeProject (http://www.codeproject.com/KB/library/elf-redirect.aspx).
