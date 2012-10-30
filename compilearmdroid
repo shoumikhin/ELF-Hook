@@ -1,0 +1,14 @@
+#!/bin/bash
+#   Compile script for ARM Android.
+# TOOLCHAIN needs to be set to the location of the toolchain,
+#    for example: /opt/ndk/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86 
+# SYSROOT must be set to the location of the ndk sys root,
+#    for example: /opt/ndk/platforms/android-14/arch-arm
+GCC=${TOOLCHAIN}/bin/arm-linux-androideabi-gcc
+CFLAGS="-g3 --sysroot=${SYSROOT}"
+rm -f *.so test
+
+${GCC} ${CFLAGS}       -shared -o libtest1.so libtest1.c
+${GCC} ${CFLAGS} -fPIC -shared -o libtest2.so libtest2.c
+
+${GCC} ${CFLAGS} -L$PWD -o test test.c elf_hook.c -ltest1 -ltest2 -ldl

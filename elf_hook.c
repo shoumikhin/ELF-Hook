@@ -310,6 +310,70 @@ static int symbol_by_name(int d, Elf_Shdr *section, char const *name, Elf_Sym **
     return 0;
 }
 //--------------------------------------------------------------------------------------------------
+int get_module_base_address(char const *module_filename, void *handle, void **base)
+{
+    int descriptor;  //file descriptor of shared module
+    Elf_Shdr *dynsym = NULL, *strings_section = NULL;
+    char const *strings = NULL;
+    Elf_Sym *symbols = NULL;
+    size_t i, amount;
+    Elf_Sym *found = NULL;
+
+    *base = NULL;
+
+    descriptor = open(module_filename, O_RDONLY);
+
+    if (descriptor < 0)
+        return errno;
+
+    if (section_by_type(descriptor, SHT_DYNSYM, &dynsym) ||  //get ".dynsym" section
+        section_by_index(descriptor, dynsym->sh_link, &strings_section) ||
+        read_string_table(descriptor, strings_section, &strings) ||
+        read_symbol_table(descriptor, dynsym, &symbols))
+    {
+        free(strings_section);
+        free((void *)strings);
+        free(symbols);
+        free(dynsym);
+        close(descriptor);
+
+        return errno;
+    }
+
+    amount = dynsym->sh_size / sizeof(Elf_Sym);
+
+    /* Trick to get the module base address in a portable way:
+     *   Find the first GLOBAL or WEAK symbol in the symbol table,
+     *   look this up with dlsym, then return the difference as the base address
+     */
+    for (i = 0; i < amount; ++i)
+    {
+        switch(ELF32_ST_BIND(symbols[i].st_info)) {
+        case STB_GLOBAL:
+        case STB_WEAK:
+            found = &symbols[i];
+            break;
+        default: // Not interested in this symbol
+            break;
+        }
+    }
+    if(found != NULL)
+    {
+        const char *name = &strings[found->st_name];
+        void *sym = dlsym(handle, name); 
+        if(sym != NULL)
+            *base = (void*)((size_t)sym - found->st_value);
+    }
+
+    free(strings_section);
+    free((void *)strings);
+    free(symbols);
+    free(dynsym);
+    close(descriptor);
+
+    return *base == NULL;
+}
+//--------------------------------------------------------------------------------------------------
 #ifdef __cplusplus
 extern "C"
 {
