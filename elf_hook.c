@@ -27,7 +27,7 @@
 #endif
 
 //==================================================================================================
-int read_header(int d, Elf_Ehdr **header)
+static int read_header(int d, Elf_Ehdr **header)
 {
     *header = (Elf_Ehdr *)malloc(sizeof(Elf_Ehdr));
 
@@ -48,7 +48,7 @@ int read_header(int d, Elf_Ehdr **header)
     return 0;
 }
 //--------------------------------------------------------------------------------------------------
-int read_section_table(int d, Elf_Ehdr const *header, Elf_Shdr **table)
+static int read_section_table(int d, Elf_Ehdr const *header, Elf_Shdr **table)
 {
     size_t size;
 
@@ -75,7 +75,7 @@ int read_section_table(int d, Elf_Ehdr const *header, Elf_Shdr **table)
     return 0;
 }
 //--------------------------------------------------------------------------------------------------
-int read_string_table(int d, Elf_Shdr const *section, char const **strings)
+static int read_string_table(int d, Elf_Shdr const *section, char const **strings)
 {
     if (NULL == section)
         return EINVAL;
@@ -99,7 +99,7 @@ int read_string_table(int d, Elf_Shdr const *section, char const **strings)
     return 0;
 }
 //--------------------------------------------------------------------------------------------------
-int read_symbol_table(int d, Elf_Shdr const *section, Elf_Sym **table)
+static int read_symbol_table(int d, Elf_Shdr const *section, Elf_Sym **table)
 {
     if (NULL == section)
         return EINVAL;
@@ -123,7 +123,7 @@ int read_symbol_table(int d, Elf_Shdr const *section, Elf_Sym **table)
     return 0;
 }
 //--------------------------------------------------------------------------------------------------
-int read_relocation_table(int d, Elf_Shdr const *section, Elf_Rel **table)
+static int read_relocation_table(int d, Elf_Shdr const *section, Elf_Rel **table)
 {
     if (NULL == section)
         return EINVAL;
@@ -147,7 +147,7 @@ int read_relocation_table(int d, Elf_Shdr const *section, Elf_Rel **table)
     return 0;
 }
 //--------------------------------------------------------------------------------------------------
-int section_by_index(int d, size_t const index, Elf_Shdr **section)
+static int section_by_index(int d, size_t const index, Elf_Shdr **section)
 {
     Elf_Ehdr *header = NULL;
     Elf_Shdr *sections = NULL;
@@ -184,7 +184,7 @@ int section_by_index(int d, size_t const index, Elf_Shdr **section)
     return 0;
 }
 //--------------------------------------------------------------------------------------------------
-int section_by_type(int d, size_t const section_type, Elf_Shdr **section)
+static int section_by_type(int d, size_t const section_type, Elf_Shdr **section)
 {
     Elf_Ehdr *header = NULL;
     Elf_Shdr *sections = NULL;
@@ -222,7 +222,7 @@ int section_by_type(int d, size_t const section_type, Elf_Shdr **section)
     return 0;
 }
 //--------------------------------------------------------------------------------------------------
-int section_by_name(int d, char const *section_name, Elf_Shdr **section)
+static int section_by_name(int d, char const *section_name, Elf_Shdr **section)
 {
     Elf_Ehdr *header = NULL;
     Elf_Shdr *sections = NULL;
@@ -264,7 +264,7 @@ int section_by_name(int d, char const *section_name, Elf_Shdr **section)
     return 0;
 }
 //--------------------------------------------------------------------------------------------------
-int symbol_by_name(int d, Elf_Shdr *section, char const *name, Elf_Sym **symbol, size_t *index)
+static int symbol_by_name(int d, Elf_Shdr *section, char const *name, Elf_Sym **symbol, size_t *index)
 {
     Elf_Shdr *strings_section = NULL;
     char const *strings = NULL;
