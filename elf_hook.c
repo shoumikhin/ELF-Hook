@@ -30,6 +30,10 @@
 static int read_header(int d, Elf_Ehdr **header)
 {
     *header = (Elf_Ehdr *)malloc(sizeof(Elf_Ehdr));
+    if(NULL == *header)
+    {
+        return errno;
+    }
 
     if (lseek(d, 0, SEEK_SET) < 0)
     {
@@ -57,6 +61,10 @@ static int read_section_table(int d, Elf_Ehdr const *header, Elf_Shdr **table)
 
     size = header->e_shnum * sizeof(Elf_Shdr);
     *table = (Elf_Shdr *)malloc(size);
+    if(NULL == *table)
+    {
+        return errno;
+    }
 
     if (lseek(d, header->e_shoff, SEEK_SET) < 0)
     {
@@ -81,6 +89,10 @@ static int read_string_table(int d, Elf_Shdr const *section, char const **string
         return EINVAL;
 
     *strings = (char const *)malloc(section->sh_size);
+    if(NULL == *strings)
+    {
+        return errno;
+    }
 
     if (lseek(d, section->sh_offset, SEEK_SET) < 0)
     {
@@ -105,6 +117,10 @@ static int read_symbol_table(int d, Elf_Shdr const *section, Elf_Sym **table)
         return EINVAL;
 
     *table = (Elf_Sym *)malloc(section->sh_size);
+    if(NULL == *table)
+    {
+        return errno;
+    }
 
     if (lseek(d, section->sh_offset, SEEK_SET) < 0)
     {
@@ -129,6 +145,10 @@ static int read_relocation_table(int d, Elf_Shdr const *section, Elf_Rel **table
         return EINVAL;
 
     *table = (Elf_Rel *)malloc(section->sh_size);
+    if(NULL == *table)
+    {
+        return errno;
+    }
 
     if (lseek(d, section->sh_offset, SEEK_SET) < 0)
     {
@@ -466,21 +486,17 @@ void *elf_hook(char const *module_filename, void const *module_address, char con
             if (!original)
                 original = (void *)(*name_address + (size_t)name_address + sizeof(size_t));  //calculate an address of the original function by a relative CALL (0xE8) instruction's argument
 
-            mprotect((void *)(((size_t)name_address) & (((size_t)-1) ^ (pagesize - 1))), pagesize, PROT_READ | PROT_WRITE);  //mark a memory page that contains the relocation as writable
-
-            if (errno)
-                return NULL;
-
-            *name_address = (size_t)substitution - (size_t)name_address - sizeof(size_t);  //calculate a new relative CALL (0xE8) instruction's argument for the substitutional function and write it down
-
-            mprotect((void *)(((size_t)name_address) & (((size_t)-1) ^ (pagesize - 1))), pagesize, PROT_READ | PROT_EXEC);  //mark a memory page that contains the relocation back as executable
-
-            if (errno)  //if something went wrong
+            if(mprotect((void *)(((size_t)name_address) & (((size_t)-1) ^ (pagesize - 1))), pagesize, PROT_READ | PROT_WRITE) < 0)  //mark a memory page that contains the relocation as writable
             {
-                *name_address = (size_t)original - (size_t)name_address - sizeof(size_t);  //then restore the original function address
-
                 return NULL;
             }
+
+            *name_address = (size_t)substitution - (size_t)name_address - sizeof(size_t);  //calculate a new relative CALL (0xE8) instruction's argument for the substitutional function and write it down
+            if(mprotect((void *)(((size_t)name_address) & (((size_t)-1) ^ (pagesize - 1))), pagesize, PROT_READ | PROT_EXEC) < 0)  //mark a memory page that contains the relocation back as executable
+            {
+                *name_address = (size_t)original - (size_t)name_address - sizeof(size_t);  //if something went wrong then restore the original function address	    
+                return NULL;
+	    }
         }
 
     return original;
