@@ -139,39 +139,10 @@ static int read_symbol_table(int d, Elf_Shdr const *section, Elf_Sym **table)
     return 0;
 }
 //--------------------------------------------------------------------------------------------------
-static int read_relocation_table(int d, Elf_Shdr const *section, Elf_Rel **table)
-{
-    if (NULL == section)
-        return EINVAL;
-
-    *table = (Elf_Rel *)malloc(section->sh_size);
-    if(NULL == *table)
-    {
-        return errno;
-    }
-
-    if (lseek(d, section->sh_offset, SEEK_SET) < 0)
-    {
-        free(*table);
-
-        return errno;
-    }
-
-    if (read(d, *table, section->sh_size) <= 0)
-    {
-        free(*table);
-
-        return errno = EINVAL;
-    }
-
-    return 0;
-}
-//--------------------------------------------------------------------------------------------------
 static int section_by_index(int d, size_t const index, Elf_Shdr **section)
 {
     Elf_Ehdr *header = NULL;
     Elf_Shdr *sections = NULL;
-    size_t i;
 
     *section = NULL;
 
@@ -380,7 +351,7 @@ int get_module_base_address(char const *module_filename, void *handle, void **ba
     if(found != NULL)
     {
         const char *name = &strings[found->st_name];
-        void *sym = dlsym(handle, name); 
+        void *sym = dlsym(handle, name);
         if(sym != NULL)
             *base = (void*)((size_t)sym - found->st_value);
     }
@@ -494,7 +465,7 @@ void *elf_hook(char const *module_filename, void const *module_address, char con
             *name_address = (size_t)substitution - (size_t)name_address - sizeof(size_t);  //calculate a new relative CALL (0xE8) instruction's argument for the substitutional function and write it down
             if(mprotect((void *)(((size_t)name_address) & (((size_t)-1) ^ (pagesize - 1))), pagesize, PROT_READ | PROT_EXEC) < 0)  //mark a memory page that contains the relocation back as executable
             {
-                *name_address = (size_t)original - (size_t)name_address - sizeof(size_t);  //if something went wrong then restore the original function address	    
+                *name_address = (size_t)original - (size_t)name_address - sizeof(size_t);  //if something went wrong then restore the original function address
                 return NULL;
 	    }
         }
